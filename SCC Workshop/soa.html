@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>SOA Example</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-2.2.2.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="https://code.highcharts.com/stock/highstock.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+
+    <style>
+        .search-form-title {
+            padding: 20px 0 10px 0;
+            text-align: center;
+        }
+    </style>
+
+    <script type="text/javascript">
+        var chartHeight = 420;
+var server ="http://localhost:8888/soa.php";//since there is no login in this example, 
+//we can keep the server in htdocs and start the server,
+//while html file(client) can be saved anywhere in the device outside the server say desktop or documents folder
+        function getQuote(stock) {
+            $.get(server+'?symbol=' + stock, function(data) {//request to public API could be done directly through client(HERE) using CORS or JSONP
+            //however, best practice is to make all requests from server side
+                if (data.name) {
+                $('#stockTab').css('visibility', 'visible');
+
+                    $('#stockName').html(data.name);
+                    $('#stockSymbol').html(data.symbol);
+                    $('#lastPrice').html('$ ' + data.lastPrice);
+                    $('#changePercent').html(data.change, data.changePercent);
+                    $('#stockTime').html(data.stockTime);
+                    $('#marketCap').html(data.marketCap);
+                    $('#volume').html(data.volume);
+                    $('#changeYTD').html(data.changeYTD, data.changePercentYTD);
+                    $('#highPrice').html('$ ' + data.highPrice);
+                    $('#lowPrice').html('$ ' + data.lowPrice);
+                    $('#openPrice').html('$ ' + data.openPrice);
+                    getCharts(data.symbol);//my approach here is that there is no need in making
+                    //connection to all service providers if first service provider fails
+                    getNewsFeed(data.symbol);
+                }
+            });
+        }
+
+        function getCharts(symbol) {
+            $('#highChart').height(chartHeight);
+
+            $.get(server + '?chart=' + symbol, function(data) {
+                var chartData = getChartData(data);
+                $('#highChart').highcharts('StockChart', {
+                    chart: {
+                        width: $('#stockTab').width()
+                    },
+                    yAxis: {
+                        title: {
+                            text: 'Stock Value'
+                        }
+                    },
+                    rangeSelector: {
+                        inputEnabled: false,
+                        buttons: [{
+                            type: 'week',
+                            count: 1,
+                            text: '1w'
+                        }, {
+                            type: 'month',
+                            count: 1,
+                            text: '1m'
+                        }, {
+                            type: 'month',
+                            count: 3,
+                            text: '3m'
+                        }, {
+                            type: 'month',
+                            count: 6,
+                            text: '6m'
+                        }, {
+                            type: 'ytd',
+                            text: 'YTD'
+                        }, {
+                            type: 'year',
+                            count: 1,
+                            text: '1y'
+                        }, {
+                            type: 'all',
+                            text: 'All'
+                        }],
+                        selected: 0,
+                    },
+                    exporting: {
+                        enabled: false
+                    },
+                    title: {
+                        text: symbol + ' Stock Value'
+                    },
+                    series: [{
+                        name: symbol,
+                        data: chartData,
+                        type: 'area',
+                        threshold: null,
+                        tooltip: {
+                            valueDecimals: 2,
+                            valuePrefix: '$'
+                        },
+                        fillColor: {
+                            linearGradient: {
+                                x1: 0,
+                                y1: 0,
+                                x2: 0,
+                                y2: 1
+                            },
+                            stops: [
+                                [0, Highcharts.getOptions().colors[0]],
+                                [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                            ]
+                        }
+                    }]
+                });
+            });
+        }
+
+        function getChartData(data) {
+            var dates = data.Dates || [];
+            var elements = data.Elements || [];
+            var chartSeries = [];
+
+            if (elements[0]) {
+                for (var i = 0, datLen = dates.length; i < datLen; i++) {
+                    var dat = formatChartDate(dates[i]);
+                    var pointData = [
+                        dat,
+                        elements[0].DataSeries['close'].values[i]
+                    ];
+                    chartSeries.push(pointData);
+                };
+            }
+            return chartSeries;
+        }
+
+        function formatChartDate(date) {
+            var dat = new Date(date);
+            return Date.UTC(dat.getFullYear(), dat.getMonth(), dat.getDate());
+        }
+
+        function getNewsFeed(symbol) {
+            $('#feedContent').html('');
+            //making request directly from client to public API which is VERY BAD PRACTICE
+            $.get('https://newsapi.org/v2/everything?q='+symbol+'&from=2018-03-26&sortBy=popularity&apiKey=74fe396dce4f4904a6970e117b254c29', function(data) {
+                if (data) {
+                    for (var i in data.articles) {
+                        var feed = '<div class="well">';
+                        //learn how to access nested JSON objects
+                        //show students how to check server response from developer tool
+                        feed += '<a href="' + data.articles[i].url + '" target="_blank">' + data.articles[i].title + '</a>';
+
+                        var regEx = new RegExp(symbol, 'g');
+                        data.articles[i].description = data.articles[i].description.replace(regEx, '<strong>' + symbol + '</strong>');
+                        feed += '<div class="feed-content">' + data.articles[i].description + '</div>'
+
+                        feed += '<div class="feed-publisher"> Publisher: ' + data.articles[i].author + '</div>'
+                        feed += '</div>';
+                        $('#feedContent').append(feed);
+                    }
+                }
+            });
+        }
+
+ //document.ready function
+        $(function() {
+            $('[data-toggle="tooltip"]').tooltip();
+
+            $('#stock').keypress(function(e) {
+                // hit enter button
+                if (e.keyCode == '13') {
+                    e.preventDefault();
+                }
+            });
+
+            $('#stockForm').submit(function(e) {
+                e.preventDefault();
+            });
+$('#stockTab').css('visibility', 'hidden');
+            $('#getQuoteBtn').click(function() {
+                if ($('#stock').val()) {
+                    getQuote($('#stock').val());
+                }
+            });
+
+
+        });
+    </script>
+</head>
+
+<body>
+    <div class="content">
+
+        <form id="stockForm" class="form-horizontal search-form">
+            <div class="search-form-title">
+                <h4>Stock Market Search</h4>
+            </div>
+            <div class="form-group required">
+                <label for="stock" class="col-sm-4 control-label">Enter the stock name or symbol:</label>
+                <div class="col-sm-3 ui-widget stock-input">
+                    <input type="text" class="form-control" id="stock" name="stock" required />
+                </div>
+                <div class="col-sm-3">
+                    <button id="getQuoteBtn" class="btn btn-primary">
+                        <i class="glyphicon glyphicon-search"></i> Get Quote
+                    </button>
+                </div>
+                <div class="col-sm-2">
+                Powered by Markitondemand & <a href="https://newsapi.org">News API</a>
+                </div>
+            </div>
+        </form>
+
+        <hr />
+                            </div>
+                      
+                    <div id="stockInfoItem">
+                        <div class="panel panel-default">
+                            <div class="panel-body">
+                                <ul class="nav nav-tabs nav-pills stock-detail-nav" role="tablist">
+                                    <li role="presentation" class="active">
+                                        <a href="#stockTab" aria-controls="stockTab" role="tab" data-toggle="tab">
+                                            <i class="glyphicon glyphicon-dashboard"></i>
+                                            <span>Current Stock</span>
+                                        </a>
+                                    </li>
+                                    <li role="presentation">
+                                        <a href="#chartTab" aria-controls="chartTab" role="tab" data-toggle="tab">
+                                            <i class="glyphicon glyphicon-stats"></i>
+                                            <span>Historical Charts</span>
+                                        </a>
+                                    </li>
+                                    <li role="presentation">
+                                        <a href="#feedTab" aria-controls="feedTab" role="tab" data-toggle="tab">
+                                            <i class="glyphicon glyphicon-link"></i>
+                                            <span>News Feeds</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                                <div class="tab-content">
+                                    <div role="tabpanel" class="tab-pane active" id="stockTab">
+                                       
+                                        <div class="col-sm-12">
+                                            <table class="table table-striped">
+                                                <tr>
+                                                    <td>
+                                                        <strong>Name</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span id="stockName"></span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>Symbol</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span id="stockSymbol"></span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>Last Price</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span id="lastPrice"></span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>Change (Change Percent)</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span id="changePercent"></span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>Time and Date</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span id="stockTime"></span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>Market Cap</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span id="marketCap"></span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>Volume</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span id="volume"></span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>Change YTD (Change Percent YTD)</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span id="changeYTD"></span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>High Price</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span id="highPrice"></span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>Low Price</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span id="lowPrice"></span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>Opening Price</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span id="openPrice"></span>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        
+                                    </div>
+                                    <div role="tabpanel" class="tab-pane" id="chartTab">
+                                        <div id="highChart" class="stock-high-chart"></div>
+                                    </div>
+                                    <div role="tabpanel" class="tab-pane" id="feedTab">
+                                        <div id="feedContent" class="news-feed"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

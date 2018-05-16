@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="sadeem">
+    	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <title>Client Server Example</title>
+    <style>
+    .pullright{
+   position:fixed;
+   right:300px;
+   top:50px;
+}
+    </style>
+  </head>
+  <body>
+
+    <h2>Client Server Example</h2>
+    <input type="button" value="Sign out" onclick="logout()" class="pullright">
+  Enter user name: <input type="text" id="username">
+ <br><br>
+  <input type="button" value="Search" onclick="getResult()">  
+
+<h2> Result:</h2>
+<p id="demo"></p>
+ <script>
+   function getResult() {
+     var user="";//need to initialize
+   user=document.getElementById('username').value;
+ var obj, xmlhttp, response, x, txt = "";
+xmlhttp = new XMLHttpRequest();
+xmlhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+        response = JSON.parse(this.responseText);
+        txt += "<table border='1'><tr><th>ID</th><th>Name</th><th>Age</th><th>Gender</th></tr>";
+        for (x in response) {
+            txt += "<tr><td>" + response[x].id + "</td><td>"+response[x].name+"</td><td>"+response[x].age+"</td><td>"+response[x].gender+"</td></tr>";
+        }
+        txt += "</table>"        
+        document.getElementById("demo").innerHTML = txt;
+    }
+};
+xmlhttp.open("GET", "https://swe381.000webhostapp.com/index.php?username="+user, true);
+xmlhttp.send();
+}
+function logout()
+{
+$.ajax({
+    url: 'https://swe381.000webhostapp.com/login.php?request=logout',
+    dataType: 'json',
+    xhrFields: {
+       withCredentials: true
+    },
+    crossDomain: true,
+    success: function (data) {
+              if(data.success==5 )
+            window.location.href = "login.html"
+            }
+});
+}
+  $(document).ready(function(){
+    $.ajax({
+    url: 'https://swe381.000webhostapp.com/login.php',
+	type: "POST",
+    dataType: 'json',
+    xhrFields: {
+       withCredentials: true
+    },
+    crossDomain: true,
+    success: function (data) {
+              if(data.success==2 || data.success==3 || data.success==4 )
+            window.location.href = "login.html"
+            }
+});
+});
+   </script>
+  </body>
+</html>

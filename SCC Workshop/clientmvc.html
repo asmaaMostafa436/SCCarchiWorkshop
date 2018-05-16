@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MVC Client Example</title>
+  <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+<script>
+var app = angular.module("sccworkshop", []);//angular function module is to initialize the MVC angular part
+app.controller("data", function ($scope, $http) {// to initialize the controller here I named it data from the ng-controller attribute in html
+//pass the needed parameters in function.
+//scope is for reaching the variables inside the angular app
+//http is for making an http connection
+  $scope.searchInput = function() {
+var url = "https://swe381.000webhostapp.com/index.php?username=" + $scope.input;
+    $http.get(url).then(function (response) {
+        //$scope.users = response.data;//users is an array defined in html which is reached in script using the scope
+    $('#test').text("hi"+response.data);
+    });
+       };  
+});
+</script>
+</head>
+<body ng-app="sccworkshop">
+            <div ng-controller="data">
+            <h3>MVC client request to server</h3>
+                        <input type="text" ng-model="input" ng-change="searchInput($event,input)" >
+                   <br/>
+                   <p id="test"></p>
+                <table>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                      <th>Age</th>
+                        <th>Gender</th>
+                    </tr>
+                    <tr ng-repeat="x in users ">
+                        <td>{{x.id}}</td>
+                        <td>{{x.name}}</td>
+                      <td>{{x.age}}</td>
+                        <td>{{x.gender}}</td>
+                    </tr>
+                </table>          
+        </div>
+    </div>
+</body>
+</html>

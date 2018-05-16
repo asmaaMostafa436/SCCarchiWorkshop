@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Sadeem">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <title>Sign in Client Server Example</title>
+
+  </head>
+  <body>
+
+    <div class="container">
+
+      <form>
+        <h2>Please sign in</h2>
+        if user already logged in redirect
+        if server is down connect to backup
+         <label for="inputEmail">Username</label>
+        <input type="text" id="inputEmail" placeholder="Username" required autofocus>
+        <label for="inputPassword">Password</label>
+        <input type="password" id="inputPassword" placeholder="Password" required>
+        <input type="button" id="connectbtn" onclick="makeConnection()" value="Sign in">
+	  </form>
+    </div>
+    <script>
+    function makeConnection()
+    {
+    $.ajax({
+    url: 'https://swe381.000webhostapp.com/login.php',
+    type: "POST",
+    data: {'usrname': $("#inputEmail").val(), 'pwd': $("#inputPassword").val()},
+    dataType: 'json',
+    xhrFields: {
+       withCredentials: true
+    },
+    crossDomain: true,
+    success: function (data) {
+              if(data.success==0 || data.success==1)
+            window.location.href = "client.html"
+else if(data.success==2)
+alert("Username/password is incorrect! try again");
+else
+alert("Server error please try again later or check server settings");            
+},
+error: function (request, status, error)
+{
+backupConnection();
+}
+});
+    }
+    function backupConnection()
+    {
+    alert("make backup server connection here exactly the same as before using backup server URL");
+    }
+    $(document).ready(function(){
+    makeConnection();
+}); 
+</script>
+  </body>
+</html>
