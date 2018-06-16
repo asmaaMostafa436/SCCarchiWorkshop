@@ -153,7 +153,7 @@ var server ="http://localhost:8888/soa.php";//since there is no login in this ex
         function getNewsFeed(symbol) {
             $('#feedContent').html('');
             //making request directly from client to public API which is VERY BAD PRACTICE
-            $.get('https://newsapi.org/v2/everything?q='+symbol+'&from=2018-03-26&sortBy=popularity&apiKey=74fe396dce4f4904a6970e117b254c29', function(data) {
+            $.get('https://newsapi.org/v2/everything?q='+symbol+'&from=2018-03-26&sortBy=popularity&apiKey=YOURKEY', function(data) {
                 if (data) {
                     for (var i in data.articles) {
                         var feed = '<div class="well">';
